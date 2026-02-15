@@ -20,8 +20,8 @@ SCAU-Rec/
 │
 └── README.md
 
-
 ## Preparation
+
 1.Prepare the environment:
 
 ```sh
