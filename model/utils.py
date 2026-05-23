@@ -12,10 +12,6 @@ import torch
 from torch.nn import functional as F
 
 
-# ============================================================
-# 0) Small helpers
-# ============================================================
-
 def to_device_batch(batch: Dict[str, Any], device: torch.device) -> Dict[str, Any]:
     """Move tensor fields in batch to device."""
     out = {}
@@ -45,10 +41,6 @@ def cosine_distance(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     cos = (a * b).sum(dim=-1)
     return 1.0 - cos
 
-
-# ============================================================
-# 1) Ranking metrics
-# ============================================================
 
 def evaluate_ranking_metrics(scored_df: pd.DataFrame, ks: Iterable[int] = (5, 10)) -> Dict[str, float]:
     """
@@ -97,10 +89,6 @@ def evaluate_ranking_metrics(scored_df: pd.DataFrame, ks: Iterable[int] = (5, 10
     return out
 
 
-# ============================================================
-# 2) Per-user state for CLARA
-# ============================================================
-
 @dataclass
 class UserState:
     # Reference coreset: list of [d] embeddings (CPU tensors)
@@ -123,10 +111,6 @@ class UserState:
         self.avg_drift = self.avg_drift + (d_t - self.avg_drift) / max(1, self.steps)
         self.avg_lambda = self.avg_lambda + (lam - self.avg_lambda) / max(1, self.steps)
 
-
-# ============================================================
-# 3) Candidate scoring (MVP) + rows for DataFrame
-# ============================================================
 
 @torch.no_grad()
 def score_candidates_token_first(
@@ -191,10 +175,6 @@ def score_candidates_token_first(
 
     return rows
 
-
-# ============================================================
-# 4) Drift trigger + lambda schedule
-# ============================================================
 
 @torch.no_grad()
 def extract_query_embedding(
@@ -265,9 +245,6 @@ def lambda_from_drift(
     return float(lambda_max)
 
 
-# ============================================================
-# 5) Coreset update / prune
-# ============================================================
 
 def update_coreset_fifo(bref: List[torch.Tensor], h_t: torch.Tensor, max_size: int) -> List[torch.Tensor]:
     """MVP: FIFO buffer update."""
@@ -308,10 +285,6 @@ def prune_coreset_by_diversity(bref: List[torch.Tensor], max_size: int, eps: flo
             keep.append(v)
     return keep[:max_size]
 
-
-# ============================================================
-# 6) Risk-aware alignment: symmetric KL on candidate distribution
-# ============================================================
 
 def symmetric_kl(p: torch.Tensor, q: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
     """
@@ -356,10 +329,6 @@ def candidate_distribution_first_token(
     return dist
 
 
-# ============================================================
-# 7) Safe-subspace projection (simplified online)
-# ============================================================
-
 def update_subspace_Q(Q: Optional[torch.Tensor], g: torch.Tensor, r: int) -> torch.Tensor:
     """
     Maintain an orthonormal basis Q of top-r directions (simplified):
@@ -398,10 +367,6 @@ def project_gradient_orthogonal(g: torch.Tensor, Q: Optional[torch.Tensor]) -> t
     return g - proj
 
 
-# ============================================================
-# 8) Utilities for gradients / parameter vectorization (for LoRA params)
-# ============================================================
-
 def iter_trainable_params(model: torch.nn.Module) -> List[torch.nn.Parameter]:
     """Return parameters requiring grad (trainable)."""
     return [p for p in model.parameters() if p.requires_grad]
@@ -436,10 +401,6 @@ def apply_projected_grads(params: List[torch.nn.Parameter], g_proj: torch.Tensor
         offset += numel
     assert offset == g_proj.numel()
 
-
-# ============================================================
-# 9) One-step CLARA decision helper (no optimizer inside)
-# ============================================================
 
 @torch.no_grad()
 def clara_decide_trigger_and_update_coreset(
