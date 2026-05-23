@@ -14,7 +14,7 @@ SCAU-Rec/
 │
 ├── model/
 │   ├── model_interface.py    # Core model wrapper for adapter updating
-│   ├── clara_utils.py        # Subspace projection and continual update utilities
+│   ├── utils.py        # Subspace projection and continual update utilities
 │
 └── README.md
 ```
